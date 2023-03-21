@@ -1,0 +1,49 @@
+## Author: Bin Hu
+## Code adapted from the homework code skeleton
+## HW2, LING 5801 23S at UMN, Instrctor: Brian Reese
+
+### Here are regular expressions for classes of things like vowels and
+### consonants to use in later expressions.
+
+define Vowel [a|e|i|o|u|I] ;
+define Consonant [b|c|d|f|g|h|j|k|l|m|n|p|q|r|s|t|v|w|x|y|z] ;
+
+### Create an FST that contains the Finnish noun stems (see finnish_nouns.txt).
+read text finnish_stems.txt
+define Stem
+
+### Create an FST that relates underlying Number and Case values to
+### their surface realizations and concatenate it with the FST for the
+### noun stems. Number values and +Sg, +Pl and Case values are +Nom,
+### +Part. In the end you should have an FST called FinnishNouns that
+### relates forms like "maa+Pl+Part" to "maaITa".
+
+# Feature tags
+define Singular "+Sg":0 ;
+define Plural "+Pl" .x. I;
+define Nominative "+Nom":0;
+define Partitive "+Part" .x. T a;
+
+# Lexical transducer
+define Lexicon [ Stem Singular Nominative | Stem Singular Partitive | Stem Plural Partitive ] ;
+
+# I, T realization
+# The order of these rules should NOT be altered
+define MonoPart [ T a -> t a || .#. Consonant* Vowel+ (I) _ ];
+define BiPart [ T a -> a || Consonant+ Vowel+ Consonant* (I) _ ];
+define PlBetweenVowels [ I -> j || Vowel _ Vowel ];
+define DefaultPl [ I -> i ];
+
+### Implement rules for realizing underlying forms correctly and compose them in the correct order.
+# These rules should be applied AHEAD OF the I, T realization
+define VowelRounding [ a -> o || \a _ I];
+define VowelLowering [ i -> e || \i _ I];
+define VowelDropping [ a -> 0 || Consonant+ [ o | u ] Vowel* Consonant+ _ I ];
+define VowelShortening [ a a -> a , e e -> e , i i -> i , o o -> o , u u -> u ,  u o -> o , i e -> e || _ I ];
+
+define FinishNouns Lexicon .o. VowelDropping .o. VowelRounding .o. VowelLowering .o. VowelShortening .o. MonoPart .o. BiPart .o. PlBetweenVowels .o. DefaultPl ;
+
+### Push your final RE "FinishNouns" onto the stack, ready for use.
+push FinishNouns
+
+!lower-words
